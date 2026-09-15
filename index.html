@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Absensi Digital MA BI ISLAMI</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f6fa;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .box {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 18px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.10);
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin: 7px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .pilih {
+      background: #1f4e78;
+      color: white;
+      width: 90%;
+    }
+
+    .hadir {
+      background: #188038;
+      color: white;
+      width: 90%;
+      font-weight: bold;
+    }
+
+    .kembali {
+      background: #777;
+      color: white;
+    }
+
+    #reader {
+      width: 100%;
+      margin: 15px auto;
+    }
+
+    .identitas {
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .pesan {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>ABSENSI DIGITAL</h1>
+  <h2>MA BI ISLAMI</h2>
+
+  <div id="awal">
+    <p>Pilih jenis absensi</p>
+
+    <button class="pilih" onclick="mulai('SISWA')">
+      👨‍🎓 ABSENSI SISWA
+    </button>
+
+    <button class="pilih" onclick="mulai('GURU')">
+      👩‍🏫 ABSENSI GURU
+    </button>
+  </div>
+
+  <div id="scanner" style="display:none;">
+    <h3 id="judulScanner"></h3>
+
+    <div id="reader"></div>
+
+    <p>Arahkan kamera ke QR Code.</p>
+
+    <button class="kembali" onclick="kembali()">
+      Kembali
+    </button>
+  </div>
+
+  <div id="konfirmasi" style="display:none;">
+
+    <h3>Data Ditemukan ✅</h3>
+
+    <div class="identitas" id="identitas"></div>
+
+    <button class="hadir" onclick="simpanAbsensi()">
+      ✅ HADIR
+    </button>
+
+    <br>
+
+    <button class="kembali" onclick="kembali()">
+      Batal
+    </button>
+
+    <p class="pesan" id="pesan"></p>
+
+  </div>
+
+</div>
+
+<script>
+
+const API = "https://script.google.com/macros/s/AKfycbyL1dxkM_FU3d4-2Kkumw3yXmYdgwnAPD1EeBqfeFXQG8w3ffk3gD-tCZfLTqXVsJD_3Q/exec";
+
+let jenis = "";
+let scanner = null;
+let dataTerpilih = null;
+
+
+/* MULAI SCANNER */
+
+function mulai(pilihan) {
+
+  jenis = pilihan;
+
+  document.getElementById("awal").style.display = "none";
+  document.getElementById("scanner").style.display = "block";
+
+  document.getElementById("judulScanner").innerText =
+    pilihan === "SISWA"
+    ? "Scan QR Siswa"
+    : "Scan QR Guru";
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+    },
+    function(qrId) {
+
+      scanner.stop().then(function() {
+
+        document.getElementById("scanner").style.display = "none";
+
+        cariData(qrId);
+
+      });
+
+    }
+  )
+  .catch(function(error) {
+
+    alert(
+      "Kamera tidak dapat dibuka. Pastikan browser mengizinkan kamera."
+    );
+
+  });
+}
+
+
+/* CARI DATA */
+
+function cariData(qrId) {
+
+  const callbackName =
+    "callback_" + Date.now();
+
+  window[callbackName] = function(data) {
+
+    delete window[callbackName];
+
+    if (!data) {
+
+      alert("QR Code tidak ditemukan dalam database.");
+
+      kembali();
+
+      return;
+    }
+
+    dataTerpilih = data;
+
+    let html = "";
+
+    html += "<b>Nama:</b> " + data.nama + "<br><br>";
+
+    if (jenis === "SISWA") {
+
+      html += "<b>NIS:</b> " + data.nis + "<br>";
+      html += "<b>Kelas:</b> " + data.kelas + "<br>";
+
+    } else {
+
+      html += "<b>NIP:</b> " + data.nip + "<br>";
+      html += "<b>Jabatan:</b> " + data.jabatan + "<br>";
+
+    }
+
+    document.getElementById("identitas").innerHTML = html;
+
+    document.getElementById("konfirmasi").style.display = "block";
+
+  };
+
+  const script = document.createElement("script");
+
+  script.src =
+    API +
+    "?action=cari" +
+    "&jenis=" + encodeURIComponent(jenis) +
+    "&qrId=" + encodeURIComponent(qrId) +
+    "&callback=" + callbackName;
+
+  document.body.appendChild(script);
+}
+
+
+/* SIMPAN ABSENSI */
+
+function simpanAbsensi() {
+
+  document.getElementById("pesan").innerText =
+    "Menyimpan absensi...";
+
+  const callbackName =
+    "callback_" + Date.now();
+
+  window[callbackName] = function(data) {
+
+    delete window[callbackName];
+
+    document.getElementById("pesan").innerText =
+      data.pesan;
+
+    if (data.berhasil) {
+
+      setTimeout(function() {
+        kembali();
+      }, 2000);
+
+    }
+
+  };
+
+  const script = document.createElement("script");
+
+  script.src =
+    API +
+    "?action=simpan" +
+    "&jenis=" + encodeURIComponent(jenis) +
+    "&id=" + encodeURIComponent(dataTerpilih.id) +
+    "&callback=" + callbackName;
+
+  document.body.appendChild(script);
+}
+
+
+/* KEMBALI */
+
+function kembali() {
+
+  if (scanner) {
+
+    scanner.stop().catch(function(){});
+
+  }
+
+  jenis = "";
+  dataTerpilih = null;
+
+  document.getElementById("awal").style.display = "block";
+  document.getElementById("scanner").style.display = "none";
+  document.getElementById("konfirmasi").style.display = "none";
+
+  document.getElementById("identitas").innerHTML = "";
+  document.getElementById("pesan").innerText = "";
+}
+
+</script>
+
+</body>
+</html>
