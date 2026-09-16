@@ -139,7 +139,9 @@ let scanner = null;
 let dataTerpilih = null;
 
 
-/* MULAI SCANNER */
+/* ================================
+   MULAI SCANNER
+================================ */
 
 function mulai(pilihan) {
 
@@ -150,8 +152,8 @@ function mulai(pilihan) {
 
   document.getElementById("judulScanner").innerText =
     pilihan === "SISWA"
-    ? "Scan QR Siswa"
-    : "Scan QR Guru";
+      ? "Scan QR Siswa"
+      : "Scan QR Guru";
 
   scanner = new Html5Qrcode("reader");
 
@@ -164,6 +166,7 @@ function mulai(pilihan) {
         height: 250
       }
     },
+
     function(qrId) {
 
       scanner.stop().then(function() {
@@ -186,12 +189,13 @@ function mulai(pilihan) {
 }
 
 
-/* CARI DATA */
+/* ================================
+   CARI DATA
+================================ */
 
 function cariData(qrId) {
 
-  const callbackName =
-    "callback_" + Date.now();
+  const callbackName = "callback_" + Date.now();
 
   window[callbackName] = function(data) {
 
@@ -210,18 +214,34 @@ function cariData(qrId) {
 
     let html = "";
 
-    html += "<b>Nama:</b> " + data.nama + "<br><br>";
+    html +=
+      "<b>Nama:</b> " +
+      (data.nama || "-") +
+      "<br><br>";
 
     if (jenis === "SISWA") {
 
-      html += "<b>NIS:</b> " + data.nis + "<br>";
-      html += "<b>Kelas:</b> " + data.kelas + "<br>";
+      html +=
+        "<b>NIS:</b> " +
+        (data.nis || "-") +
+        "<br>";
+
+      html +=
+        "<b>Kelas:</b> " +
+        (data.kelas || "-") +
+        "<br>";
 
     } else {
 
-      html += "<b>NIP:</b> " + data.nip + "<br>";
-      html += "<b>Jabatan:</b> " + data.jabatan + "<br>";
+      html +=
+        "<b>NIP:</b> " +
+        (data.nip || "-") +
+        "<br>";
 
+      html +=
+        "<b>Jabatan:</b> " +
+        (data.jabatan || "-") +
+        "<br>";
     }
 
     document.getElementById("identitas").innerHTML = html;
@@ -230,60 +250,107 @@ function cariData(qrId) {
 
   };
 
+
   const script = document.createElement("script");
 
   script.src =
     API +
     "?action=cari" +
-    "&jenis=" + encodeURIComponent(jenis) +
-    "&qrId=" + encodeURIComponent(qrId) +
-    "&callback=" + callbackName;
+    "&jenis=" +
+    encodeURIComponent(jenis) +
+    "&qrId=" +
+    encodeURIComponent(qrId) +
+    "&callback=" +
+    callbackName;
+
+
+  script.onerror = function() {
+
+    delete window[callbackName];
+
+    alert(
+      "Gagal terhubung ke server absensi."
+    );
+
+    kembali();
+
+  };
+
 
   document.body.appendChild(script);
+
 }
 
 
-/* SIMPAN ABSENSI */
+/* ================================
+   SIMPAN ABSENSI
+================================ */
 
 function simpanAbsensi() {
 
   document.getElementById("pesan").innerText =
     "Menyimpan absensi...";
 
+
   const callbackName =
     "callback_" + Date.now();
+
 
   window[callbackName] = function(data) {
 
     delete window[callbackName];
 
+
     document.getElementById("pesan").innerText =
       data.pesan;
+
 
     if (data.berhasil) {
 
       setTimeout(function() {
+
         kembali();
+
       }, 2000);
 
     }
 
   };
 
-  const script = document.createElement("script");
+
+  const script =
+    document.createElement("script");
+
 
   script.src =
     API +
     "?action=simpan" +
-    "&jenis=" + encodeURIComponent(jenis) +
-    "&id=" + encodeURIComponent(dataTerpilih.id) +
-    "&callback=" + callbackName;
+    "&jenis=" +
+    encodeURIComponent(jenis) +
+    "&id=" +
+    encodeURIComponent(dataTerpilih.id) +
+    "&callback=" +
+    callbackName;
+
+
+  script.onerror = function() {
+
+    delete window[callbackName];
+
+    document.getElementById("pesan").innerText =
+      "Gagal terhubung ke server.";
+
+  };
+
 
   document.body.appendChild(script);
+
 }
 
 
-/* KEMBALI */
+/* ================================
+   KEMBALI
+================================ */
 
 function kembali() {
 
@@ -294,14 +361,26 @@ function kembali() {
   }
 
   jenis = "";
+
   dataTerpilih = null;
 
-  document.getElementById("awal").style.display = "block";
-  document.getElementById("scanner").style.display = "none";
-  document.getElementById("konfirmasi").style.display = "none";
 
-  document.getElementById("identitas").innerHTML = "";
-  document.getElementById("pesan").innerText = "";
+  document.getElementById("awal").style.display =
+    "block";
+
+  document.getElementById("scanner").style.display =
+    "none";
+
+  document.getElementById("konfirmasi").style.display =
+    "none";
+
+
+  document.getElementById("identitas").innerHTML =
+    "";
+
+  document.getElementById("pesan").innerText =
+    "";
+
 }
 
 </script>
