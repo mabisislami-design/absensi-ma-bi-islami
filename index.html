@@ -45,8 +45,15 @@
       width: 90%;
     }
 
-    .hadir {
+    .masuk {
       background: #188038;
+      color: white;
+      width: 90%;
+      font-weight: bold;
+    }
+
+    .pulang {
+      background: #1f4e78;
       color: white;
       width: 90%;
       font-weight: bold;
@@ -84,7 +91,10 @@
   <h1>ABSENSI DIGITAL</h1>
   <h2>MA BI ISLAMI</h2>
 
+  <!-- PILIH JENIS -->
+
   <div id="awal">
+
     <p>Pilih jenis absensi</p>
 
     <button class="pilih" onclick="mulai('SISWA')">
@@ -94,9 +104,14 @@
     <button class="pilih" onclick="mulai('GURU')">
       👩‍🏫 ABSENSI GURU
     </button>
+
   </div>
 
+
+  <!-- SCANNER -->
+
   <div id="scanner" style="display:none;">
+
     <h3 id="judulScanner"></h3>
 
     <div id="reader"></div>
@@ -106,7 +121,11 @@
     <button class="kembali" onclick="kembali()">
       Kembali
     </button>
+
   </div>
+
+
+  <!-- KONFIRMASI -->
 
   <div id="konfirmasi" style="display:none;">
 
@@ -114,8 +133,20 @@
 
     <div class="identitas" id="identitas"></div>
 
-    <button class="hadir" onclick="simpanAbsensi()">
-      ✅ HADIR
+    <br>
+
+    <p><b>Pilih jenis kehadiran:</b></p>
+
+    <button
+      class="masuk"
+      onclick="simpanAbsensi('MASUK')">
+      🟢 MASUK
+    </button>
+
+    <button
+      class="pulang"
+      onclick="simpanAbsensi('PULANG')">
+      🔵 PULANG
     </button>
 
     <br>
@@ -130,24 +161,28 @@
 
 </div>
 
+
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbyL1dxkM_FU3d4-2Kkumw3yXmYdgwnAPD1EeBqfeFXQG8w3ffk3gD-tCZfLTqXVsJD_3Q/exec";
+const API =
+"https://script.google.com/macros/s/AKfycbyL1dxkM_FU3d4-2Kkumw3yXmYdgwnAPD1EeBqfeFXQG8w3ffk3gD-tCZfLTqXVsJD_3Q/exec";
+
 
 let jenis = "";
 let scanner = null;
 let dataTerpilih = null;
 
 
-/* ================================
+/* ==================================================
    MULAI SCANNER
-================================ */
+================================================== */
 
 function mulai(pilihan) {
 
   jenis = pilihan;
 
   document.getElementById("awal").style.display = "none";
+
   document.getElementById("scanner").style.display = "block";
 
   document.getElementById("judulScanner").innerText =
@@ -155,12 +190,17 @@ function mulai(pilihan) {
       ? "Scan QR Siswa"
       : "Scan QR Guru";
 
+
   scanner = new Html5Qrcode("reader");
 
+
   scanner.start(
+
     { facingMode: "environment" },
+
     {
       fps: 10,
+
       qrbox: {
         width: 250,
         height: 250
@@ -171,14 +211,17 @@ function mulai(pilihan) {
 
       scanner.stop().then(function() {
 
-        document.getElementById("scanner").style.display = "none";
+        document.getElementById("scanner").style.display =
+          "none";
 
         cariData(qrId);
 
       });
 
     }
+
   )
+
   .catch(function(error) {
 
     alert(
@@ -186,31 +229,39 @@ function mulai(pilihan) {
     );
 
   });
+
 }
 
 
-/* ================================
+/* ==================================================
    CARI DATA
-================================ */
+================================================== */
 
 function cariData(qrId) {
 
-  const callbackName = "callback_" + Date.now();
+  const callbackName =
+    "callback_cari_" + Date.now();
+
 
   window[callbackName] = function(data) {
 
     delete window[callbackName];
 
+
     if (!data) {
 
-      alert("QR Code tidak ditemukan dalam database.");
+      alert(
+        "QR Code tidak ditemukan dalam database."
+      );
 
       kembali();
 
       return;
     }
 
+
     dataTerpilih = data;
+
 
     let html = "";
 
@@ -218,6 +269,7 @@ function cariData(qrId) {
       "<b>Nama:</b> " +
       (data.nama || "-") +
       "<br><br>";
+
 
     if (jenis === "SISWA") {
 
@@ -242,16 +294,23 @@ function cariData(qrId) {
         "<b>Jabatan:</b> " +
         (data.jabatan || "-") +
         "<br>";
+
     }
 
-    document.getElementById("identitas").innerHTML = html;
 
-    document.getElementById("konfirmasi").style.display = "block";
+    document.getElementById("identitas").innerHTML =
+      html;
+
+
+    document.getElementById("konfirmasi").style.display =
+      "block";
 
   };
 
 
-  const script = document.createElement("script");
+  const script =
+    document.createElement("script");
+
 
   script.src =
     API +
@@ -282,18 +341,41 @@ function cariData(qrId) {
 }
 
 
-/* ================================
+/* ==================================================
    SIMPAN ABSENSI
-================================ */
+================================================== */
 
-function simpanAbsensi() {
+function simpanAbsensi(keterangan) {
 
+  // Pastikan hanya MASUK atau PULANG
+  if (
+    keterangan !== "MASUK" &&
+    keterangan !== "PULANG"
+  ) {
+
+    alert("Jenis kehadiran tidak valid.");
+
+    return;
+  }
+
+
+  if (!dataTerpilih) {
+
+    alert("Data peserta belum ditemukan.");
+
+    return;
+  }
+
+
+  // Tampilkan jenis yang benar
   document.getElementById("pesan").innerText =
-    "Menyimpan absensi...";
+    "Menyimpan ABSENSI " +
+    keterangan +
+    "...";
 
 
   const callbackName =
-    "callback_" + Date.now();
+    "callback_simpan_" + Date.now();
 
 
   window[callbackName] = function(data) {
@@ -302,7 +384,7 @@ function simpanAbsensi() {
 
 
     document.getElementById("pesan").innerText =
-      data.pesan;
+      data.pesan || "Selesai.";
 
 
     if (data.berhasil) {
@@ -322,15 +404,26 @@ function simpanAbsensi() {
     document.createElement("script");
 
 
-  script.src =
+  /*
+   * PENTING:
+   * Nilai keterangan dikirim langsung
+   * dari tombol yang ditekan.
+   */
+
+  const url =
     API +
     "?action=simpan" +
     "&jenis=" +
     encodeURIComponent(jenis) +
     "&id=" +
     encodeURIComponent(dataTerpilih.id) +
+    "&keterangan=" +
+    encodeURIComponent(keterangan) +
     "&callback=" +
     callbackName;
+
+
+  script.src = url;
 
 
   script.onerror = function() {
@@ -348,9 +441,9 @@ function simpanAbsensi() {
 }
 
 
-/* ================================
+/* ==================================================
    KEMBALI
-================================ */
+================================================== */
 
 function kembali() {
 
@@ -360,6 +453,7 @@ function kembali() {
 
   }
 
+
   jenis = "";
 
   dataTerpilih = null;
@@ -368,8 +462,10 @@ function kembali() {
   document.getElementById("awal").style.display =
     "block";
 
+
   document.getElementById("scanner").style.display =
     "none";
+
 
   document.getElementById("konfirmasi").style.display =
     "none";
@@ -377,6 +473,7 @@ function kembali() {
 
   document.getElementById("identitas").innerHTML =
     "";
+
 
   document.getElementById("pesan").innerText =
     "";
