@@ -59,6 +59,20 @@
       font-weight: bold;
     }
 
+    .izin {
+      background: #f9ab00;
+      color: white;
+      width: 90%;
+      font-weight: bold;
+    }
+
+    .sakit {
+      background: #d93025;
+      color: white;
+      width: 90%;
+      font-weight: bold;
+    }
+
     .kembali {
       background: #777;
       color: white;
@@ -91,11 +105,13 @@
   <h1>ABSENSI DIGITAL</h1>
   <h2>MA BI ISLAMI</h2>
 
-  <!-- PILIH JENIS -->
+  <!-- =========================================
+       MENU AWAL
+  ========================================== -->
 
   <div id="awal">
 
-    <p>Pilih jenis absensi</p>
+    <p><b>Pilih menu absensi</b></p>
 
     <button class="pilih" onclick="mulai('SISWA')">
       👨‍🎓 ABSENSI SISWA
@@ -105,10 +121,20 @@
       👩‍🏫 ABSENSI GURU
     </button>
 
+    <hr>
+
+    <p><b>Pencatatan Izin / Sakit</b></p>
+
+    <button class="izin" onclick="mulaiIzinSakit()">
+      📝 IZIN / SAKIT SISWA
+    </button>
+
   </div>
 
 
-  <!-- SCANNER -->
+  <!-- =========================================
+       SCANNER
+  ========================================== -->
 
   <div id="scanner" style="display:none;">
 
@@ -125,7 +151,9 @@
   </div>
 
 
-  <!-- KONFIRMASI -->
+  <!-- =========================================
+       KONFIRMASI ABSENSI
+  ========================================== -->
 
   <div id="konfirmasi" style="display:none;">
 
@@ -159,6 +187,43 @@
 
   </div>
 
+
+  <!-- =========================================
+       KONFIRMASI IZIN / SAKIT
+  ========================================== -->
+
+  <div id="izinSakit" style="display:none;">
+
+    <h3>Data Siswa Ditemukan ✅</h3>
+
+    <div class="identitas" id="identitasIzin"></div>
+
+    <br>
+
+    <p><b>Pilih keterangan:</b></p>
+
+    <button
+      class="izin"
+      onclick="simpanIzinSakit('IZIN')">
+      🟡 IZIN
+    </button>
+
+    <button
+      class="sakit"
+      onclick="simpanIzinSakit('SAKIT')">
+      🔴 SAKIT
+    </button>
+
+    <br>
+
+    <button class="kembali" onclick="kembali()">
+      Batal
+    </button>
+
+    <p class="pesan" id="pesanIzin"></p>
+
+  </div>
+
 </div>
 
 
@@ -171,17 +236,24 @@ const API =
 let jenis = "";
 let scanner = null;
 let dataTerpilih = null;
+let modeIzinSakit = false;
 
 
 /* ==================================================
-   MULAI SCANNER
+   MULAI ABSENSI SISWA / GURU
 ================================================== */
 
 function mulai(pilihan) {
 
   jenis = pilihan;
 
+  modeIzinSakit = false;
+
   document.getElementById("awal").style.display = "none";
+
+  document.getElementById("konfirmasi").style.display = "none";
+
+  document.getElementById("izinSakit").style.display = "none";
 
   document.getElementById("scanner").style.display = "block";
 
@@ -191,7 +263,46 @@ function mulai(pilihan) {
       : "Scan QR Guru";
 
 
-  scanner = new Html5Qrcode("reader");
+  bukaKamera();
+
+}
+
+
+/* ==================================================
+   MULAI IZIN / SAKIT
+================================================== */
+
+function mulaiIzinSakit() {
+
+  jenis = "SISWA";
+
+  modeIzinSakit = true;
+
+  document.getElementById("awal").style.display = "none";
+
+  document.getElementById("konfirmasi").style.display = "none";
+
+  document.getElementById("izinSakit").style.display = "none";
+
+  document.getElementById("scanner").style.display = "block";
+
+  document.getElementById("judulScanner").innerText =
+    "Scan QR Siswa - Izin / Sakit";
+
+
+  bukaKamera();
+
+}
+
+
+/* ==================================================
+   BUKA KAMERA
+================================================== */
+
+function bukaKamera() {
+
+  scanner =
+    new Html5Qrcode("reader");
 
 
   scanner.start(
@@ -262,6 +373,45 @@ function cariData(qrId) {
 
     dataTerpilih = data;
 
+
+    /* ==========================================
+       MODE IZIN / SAKIT
+    ========================================== */
+
+    if (modeIzinSakit) {
+
+      let html = "";
+
+      html +=
+        "<b>Nama:</b> " +
+        (data.nama || "-") +
+        "<br><br>";
+
+      html +=
+        "<b>NIS:</b> " +
+        (data.nis || "-") +
+        "<br>";
+
+      html +=
+        "<b>Kelas:</b> " +
+        (data.kelas || "-");
+
+
+      document.getElementById("identitasIzin").innerHTML =
+        html;
+
+
+      document.getElementById("izinSakit").style.display =
+        "block";
+
+
+      return;
+    }
+
+
+    /* ==========================================
+       MODE ABSENSI BIASA
+    ========================================== */
 
     let html = "";
 
@@ -347,13 +497,14 @@ function cariData(qrId) {
 
 function simpanAbsensi(keterangan) {
 
-  // Pastikan hanya MASUK atau PULANG
   if (
     keterangan !== "MASUK" &&
     keterangan !== "PULANG"
   ) {
 
-    alert("Jenis kehadiran tidak valid.");
+    alert(
+      "Jenis kehadiran tidak valid."
+    );
 
     return;
   }
@@ -361,18 +512,77 @@ function simpanAbsensi(keterangan) {
 
   if (!dataTerpilih) {
 
-    alert("Data peserta belum ditemukan.");
+    alert(
+      "Data peserta belum ditemukan."
+    );
 
     return;
   }
 
 
-  // Tampilkan jenis yang benar
   document.getElementById("pesan").innerText =
     "Menyimpan ABSENSI " +
     keterangan +
     "...";
 
+
+  kirimAbsensi(
+    keterangan,
+    "pesan"
+  );
+}
+
+
+/* ==================================================
+   SIMPAN IZIN / SAKIT
+================================================== */
+
+function simpanIzinSakit(keterangan) {
+
+  if (
+    keterangan !== "IZIN" &&
+    keterangan !== "SAKIT"
+  ) {
+
+    alert(
+      "Jenis keterangan tidak valid."
+    );
+
+    return;
+  }
+
+
+  if (!dataTerpilih) {
+
+    alert(
+      "Data siswa belum ditemukan."
+    );
+
+    return;
+  }
+
+
+  document.getElementById("pesanIzin").innerText =
+    "Menyimpan " +
+    keterangan +
+    "...";
+
+
+  kirimAbsensi(
+    keterangan,
+    "pesanIzin"
+  );
+}
+
+
+/* ==================================================
+   KIRIM KE SERVER
+================================================== */
+
+function kirimAbsensi(
+  keterangan,
+  idPesan
+) {
 
   const callbackName =
     "callback_simpan_" + Date.now();
@@ -383,7 +593,7 @@ function simpanAbsensi(keterangan) {
     delete window[callbackName];
 
 
-    document.getElementById("pesan").innerText =
+    document.getElementById(idPesan).innerText =
       data.pesan || "Selesai.";
 
 
@@ -404,13 +614,7 @@ function simpanAbsensi(keterangan) {
     document.createElement("script");
 
 
-  /*
-   * PENTING:
-   * Nilai keterangan dikirim langsung
-   * dari tombol yang ditekan.
-   */
-
-  const url =
+  script.src =
     API +
     "?action=simpan" +
     "&jenis=" +
@@ -423,14 +627,11 @@ function simpanAbsensi(keterangan) {
     callbackName;
 
 
-  script.src = url;
-
-
   script.onerror = function() {
 
     delete window[callbackName];
 
-    document.getElementById("pesan").innerText =
+    document.getElementById(idPesan).innerText =
       "Gagal terhubung ke server.";
 
   };
@@ -458,6 +659,8 @@ function kembali() {
 
   dataTerpilih = null;
 
+  modeIzinSakit = false;
+
 
   document.getElementById("awal").style.display =
     "block";
@@ -471,11 +674,21 @@ function kembali() {
     "none";
 
 
+  document.getElementById("izinSakit").style.display =
+    "none";
+
+
   document.getElementById("identitas").innerHTML =
+    "";
+
+  document.getElementById("identitasIzin").innerHTML =
     "";
 
 
   document.getElementById("pesan").innerText =
+    "";
+
+  document.getElementById("pesanIzin").innerText =
     "";
 
 }
