@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Absensi Digital MA BI ISLAMI</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
@@ -26,9 +25,7 @@
       box-shadow: 0 3px 15px rgba(0,0,0,0.10);
     }
 
-    h1 {
-      margin-bottom: 5px;
-    }
+    h1 { margin-bottom: 5px; }
 
     button {
       border: none;
@@ -105,10 +102,6 @@
   <h1>ABSENSI DIGITAL</h1>
   <h2>MA BI ISLAMI</h2>
 
-  <!-- =========================================
-       MENU AWAL
-  ========================================== -->
-
   <div id="awal">
 
     <p><b>Pilih menu absensi</b></p>
@@ -131,11 +124,6 @@
 
   </div>
 
-
-  <!-- =========================================
-       SCANNER
-  ========================================== -->
-
   <div id="scanner" style="display:none;">
 
     <h3 id="judulScanner"></h3>
@@ -150,11 +138,6 @@
 
   </div>
 
-
-  <!-- =========================================
-       KONFIRMASI ABSENSI
-  ========================================== -->
-
   <div id="konfirmasi" style="display:none;">
 
     <h3>Data Ditemukan ✅</h3>
@@ -165,15 +148,11 @@
 
     <p><b>Pilih jenis kehadiran:</b></p>
 
-    <button
-      class="masuk"
-      onclick="simpanAbsensi('MASUK')">
+    <button class="masuk" onclick="simpanAbsensi('MASUK')">
       🟢 MASUK
     </button>
 
-    <button
-      class="pulang"
-      onclick="simpanAbsensi('PULANG')">
+    <button class="pulang" onclick="simpanAbsensi('PULANG')">
       🔵 PULANG
     </button>
 
@@ -187,11 +166,6 @@
 
   </div>
 
-
-  <!-- =========================================
-       KONFIRMASI IZIN / SAKIT
-  ========================================== -->
-
   <div id="izinSakit" style="display:none;">
 
     <h3>Data Siswa Ditemukan ✅</h3>
@@ -202,15 +176,11 @@
 
     <p><b>Pilih keterangan:</b></p>
 
-    <button
-      class="izin"
-      onclick="simpanIzinSakit('IZIN')">
+    <button class="izin" onclick="simpanIzinSakit('IZIN')">
       🟡 IZIN
     </button>
 
-    <button
-      class="sakit"
-      onclick="simpanIzinSakit('SAKIT')">
+    <button class="sakit" onclick="simpanIzinSakit('SAKIT')">
       🔴 SAKIT
     </button>
 
@@ -226,35 +196,31 @@
 
 </div>
 
-
 <script>
 
 const API =
 "https://script.google.com/macros/s/AKfycbyL1dxkM_FU3d4-2Kkumw3yXmYdgwnAPD1EeBqfeFXQG8w3ffk3gD-tCZfLTqXVsJD_3Q/exec";
 
-
 let jenis = "";
 let scanner = null;
 let dataTerpilih = null;
 let modeIzinSakit = false;
+let sedangScan = false;
 
 
-/* ==================================================
-   MULAI ABSENSI SISWA / GURU
-================================================== */
+/* ================================
+   MULAI
+================================ */
 
 function mulai(pilihan) {
 
   jenis = pilihan;
-
   modeIzinSakit = false;
+  dataTerpilih = null;
 
   document.getElementById("awal").style.display = "none";
-
   document.getElementById("konfirmasi").style.display = "none";
-
   document.getElementById("izinSakit").style.display = "none";
-
   document.getElementById("scanner").style.display = "block";
 
   document.getElementById("judulScanner").innerText =
@@ -262,56 +228,47 @@ function mulai(pilihan) {
       ? "Scan QR Siswa"
       : "Scan QR Guru";
 
-
   bukaKamera();
-
 }
 
 
-/* ==================================================
-   MULAI IZIN / SAKIT
-================================================== */
+/* ================================
+   IZIN / SAKIT
+================================ */
 
 function mulaiIzinSakit() {
 
   jenis = "SISWA";
-
   modeIzinSakit = true;
+  dataTerpilih = null;
 
   document.getElementById("awal").style.display = "none";
-
   document.getElementById("konfirmasi").style.display = "none";
-
   document.getElementById("izinSakit").style.display = "none";
-
   document.getElementById("scanner").style.display = "block";
 
   document.getElementById("judulScanner").innerText =
     "Scan QR Siswa - Izin / Sakit";
 
-
   bukaKamera();
-
 }
 
 
-/* ==================================================
-   BUKA KAMERA
-================================================== */
+/* ================================
+   KAMERA
+================================ */
 
 function bukaKamera() {
 
-  scanner =
-    new Html5Qrcode("reader");
+  sedangScan = true;
 
+  scanner = new Html5Qrcode("reader");
 
   scanner.start(
-
     { facingMode: "environment" },
 
     {
       fps: 10,
-
       qrbox: {
         width: 250,
         height: 250
@@ -320,7 +277,26 @@ function bukaKamera() {
 
     function(qrId) {
 
+      if (!sedangScan) return;
+
+      sedangScan = false;
+
+      qrId = String(qrId || "").trim();
+
+      if (!qrId) {
+        alert("QR ID kosong.");
+        kembali();
+        return;
+      }
+
       scanner.stop().then(function() {
+
+        document.getElementById("scanner").style.display =
+          "none";
+
+        cariData(qrId);
+
+      }).catch(function() {
 
         document.getElementById("scanner").style.display =
           "none";
@@ -331,38 +307,56 @@ function bukaKamera() {
 
     }
 
-  )
+  ).catch(function(error) {
 
-  .catch(function(error) {
+    sedangScan = false;
 
     alert(
       "Kamera tidak dapat dibuka. Pastikan browser mengizinkan kamera."
     );
 
   });
-
 }
 
 
-/* ==================================================
+/* ================================
    CARI DATA
-================================================== */
+================================ */
 
 function cariData(qrId) {
 
+  qrId = String(qrId || "").trim();
+
+  if (!qrId) {
+
+    alert("QR ID kosong.");
+
+    kembali();
+
+    return;
+  }
+
   const callbackName =
     "callback_cari_" + Date.now();
-
 
   window[callbackName] = function(data) {
 
     delete window[callbackName];
 
-
     if (!data) {
 
+      alert("Tidak ada respons dari server.");
+
+      kembali();
+
+      return;
+    }
+
+    if (!data.berhasil) {
+
       alert(
-        "QR Code tidak ditemukan dalam database."
+        data.pesan ||
+        "QR Code tidak ditemukan."
       );
 
       kembali();
@@ -370,13 +364,12 @@ function cariData(qrId) {
       return;
     }
 
-
     dataTerpilih = data;
 
 
-    /* ==========================================
-       MODE IZIN / SAKIT
-    ========================================== */
+    /* ================================
+       IZIN / SAKIT
+    ================================= */
 
     if (modeIzinSakit) {
 
@@ -396,22 +389,19 @@ function cariData(qrId) {
         "<b>Kelas:</b> " +
         (data.kelas || "-");
 
-
       document.getElementById("identitasIzin").innerHTML =
         html;
 
-
       document.getElementById("izinSakit").style.display =
         "block";
-
 
       return;
     }
 
 
-    /* ==========================================
-       MODE ABSENSI BIASA
-    ========================================== */
+    /* ================================
+       ABSENSI BIASA
+    ================================= */
 
     let html = "";
 
@@ -419,7 +409,6 @@ function cariData(qrId) {
       "<b>Nama:</b> " +
       (data.nama || "-") +
       "<br><br>";
-
 
     if (jenis === "SISWA") {
 
@@ -444,13 +433,10 @@ function cariData(qrId) {
         "<b>Jabatan:</b> " +
         (data.jabatan || "-") +
         "<br>";
-
     }
-
 
     document.getElementById("identitas").innerHTML =
       html;
-
 
     document.getElementById("konfirmasi").style.display =
       "block";
@@ -461,7 +447,6 @@ function cariData(qrId) {
   const script =
     document.createElement("script");
 
-
   script.src =
     API +
     "?action=cari" +
@@ -471,7 +456,6 @@ function cariData(qrId) {
     encodeURIComponent(qrId) +
     "&callback=" +
     callbackName;
-
 
   script.onerror = function() {
 
@@ -485,15 +469,13 @@ function cariData(qrId) {
 
   };
 
-
   document.body.appendChild(script);
-
 }
 
 
-/* ==================================================
-   SIMPAN ABSENSI
-================================================== */
+/* ================================
+   SIMPAN MASUK / PULANG
+================================ */
 
 function simpanAbsensi(keterangan) {
 
@@ -502,29 +484,22 @@ function simpanAbsensi(keterangan) {
     keterangan !== "PULANG"
   ) {
 
-    alert(
-      "Jenis kehadiran tidak valid."
-    );
+    alert("Jenis kehadiran tidak valid.");
 
     return;
   }
-
 
   if (!dataTerpilih) {
 
-    alert(
-      "Data peserta belum ditemukan."
-    );
+    alert("Data peserta belum ditemukan.");
 
     return;
   }
-
 
   document.getElementById("pesan").innerText =
     "Menyimpan ABSENSI " +
     keterangan +
     "...";
-
 
   kirimAbsensi(
     keterangan,
@@ -533,9 +508,9 @@ function simpanAbsensi(keterangan) {
 }
 
 
-/* ==================================================
+/* ================================
    SIMPAN IZIN / SAKIT
-================================================== */
+================================ */
 
 function simpanIzinSakit(keterangan) {
 
@@ -544,29 +519,22 @@ function simpanIzinSakit(keterangan) {
     keterangan !== "SAKIT"
   ) {
 
-    alert(
-      "Jenis keterangan tidak valid."
-    );
+    alert("Jenis keterangan tidak valid.");
 
     return;
   }
-
 
   if (!dataTerpilih) {
 
-    alert(
-      "Data siswa belum ditemukan."
-    );
+    alert("Data siswa belum ditemukan.");
 
     return;
   }
-
 
   document.getElementById("pesanIzin").innerText =
     "Menyimpan " +
     keterangan +
     "...";
-
 
   kirimAbsensi(
     keterangan,
@@ -575,14 +543,44 @@ function simpanIzinSakit(keterangan) {
 }
 
 
-/* ==================================================
+/* ================================
    KIRIM KE SERVER
-================================================== */
+================================ */
 
 function kirimAbsensi(
   keterangan,
   idPesan
 ) {
+
+  if (!dataTerpilih) {
+
+    document.getElementById(idPesan).innerText =
+      "Data belum ditemukan.";
+
+    return;
+  }
+
+
+  /*
+   * PENTING:
+   * Gunakan QR_ID dari data hasil scan.
+   * BUKAN ID database.
+   */
+
+  const qrId =
+    String(
+      dataTerpilih.qrId || ""
+    ).trim();
+
+
+  if (!qrId) {
+
+    document.getElementById(idPesan).innerText =
+      "QR ID tidak ditemukan.";
+
+    return;
+  }
+
 
   const callbackName =
     "callback_simpan_" + Date.now();
@@ -591,6 +589,15 @@ function kirimAbsensi(
   window[callbackName] = function(data) {
 
     delete window[callbackName];
+
+
+    if (!data) {
+
+      document.getElementById(idPesan).innerText =
+        "Tidak ada respons dari server.";
+
+      return;
+    }
 
 
     document.getElementById(idPesan).innerText =
@@ -614,13 +621,23 @@ function kirimAbsensi(
     document.createElement("script");
 
 
+  /*
+   * INI PERBAIKAN UTAMA:
+   *
+   * sebelumnya:
+   * &id=dataTerpilih.id
+   *
+   * sekarang:
+   * &qrId=dataTerpilih.qrId
+   */
+
   script.src =
     API +
     "?action=simpan" +
     "&jenis=" +
     encodeURIComponent(jenis) +
-    "&id=" +
-    encodeURIComponent(dataTerpilih.id) +
+    "&qrId=" +
+    encodeURIComponent(qrId) +
     "&keterangan=" +
     encodeURIComponent(keterangan) +
     "&callback=" +
@@ -638,41 +655,42 @@ function kirimAbsensi(
 
 
   document.body.appendChild(script);
-
 }
 
 
-/* ==================================================
+/* ================================
    KEMBALI
-================================================== */
+================================ */
 
 function kembali() {
+
+  sedangScan = false;
 
   if (scanner) {
 
     scanner.stop().catch(function(){});
 
+    try {
+      scanner.clear();
+    } catch (e) {}
+
+    scanner = null;
   }
 
 
   jenis = "";
-
   dataTerpilih = null;
-
   modeIzinSakit = false;
 
 
   document.getElementById("awal").style.display =
     "block";
 
-
   document.getElementById("scanner").style.display =
     "none";
 
-
   document.getElementById("konfirmasi").style.display =
     "none";
-
 
   document.getElementById("izinSakit").style.display =
     "none";
@@ -684,13 +702,11 @@ function kembali() {
   document.getElementById("identitasIzin").innerHTML =
     "";
 
-
   document.getElementById("pesan").innerText =
     "";
 
   document.getElementById("pesanIzin").innerText =
     "";
-
 }
 
 </script>
